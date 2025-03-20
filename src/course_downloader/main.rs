@@ -1,18 +1,13 @@
+use super::download::get_with_cookie;
 use anyhow::Result;
-use lazy_static::lazy_static;
-use log::{debug, error, trace, warn};
-use reqwest::blocking::{Client, Response};
-use reqwest::header::COOKIE;
-use reqwest::IntoUrl;
+use log::{debug, trace};
+use log::{error, warn};
 use serde_json::Value;
 
 use crate::public::DownloadFile;
+use crate::public::VOID_VEC;
 
 const DOWNLOAD_PATH: &str = "./download/";
-
-lazy_static! {
-    static ref VOID_VEC: Vec<Value> = Vec::new();
-}
 
 #[derive(Debug)]
 pub enum Error {
@@ -32,7 +27,7 @@ pub fn main() {
     }
 }
 
-fn get_file(course_id: &str, cookie: &str) -> Result<(), Error> {
+pub fn get_file(course_id: &str, cookie: &str) -> Result<(), Error> {
     let resp = get_with_cookie(
         format!(
             "https://lnt.xmu.edu.cn/api/courses/{}/activities",
@@ -83,15 +78,4 @@ fn get_file(course_id: &str, cookie: &str) -> Result<(), Error> {
         }
     }
     Ok(())
-}
-
-fn get_with_cookie<U: IntoUrl>(url: U, cookie: &str) -> Result<Response, Error> {
-    match Client::new()
-        .get(url)
-        .header(COOKIE, cookie)
-        .header("User-Agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-        .send(){
-            Ok(e)=>Ok(e),
-            Err(_)=>Err(Error::NetworkFailure),
-        }
 }

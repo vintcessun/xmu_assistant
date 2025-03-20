@@ -5,7 +5,7 @@ use log::{Level, LevelFilter};
 use std::io::Write;
 use std::thread;
 
-const LEVEL: LevelFilter = LevelFilter::Debug;
+pub const LEVEL: LevelFilter = LevelFilter::Trace;
 
 pub fn main() {
     let main_id = thread::current().id();

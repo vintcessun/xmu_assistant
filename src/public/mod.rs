@@ -8,3 +8,10 @@ pub fn main() {
     thread_manage::main();
     download_file::main();
 }
+
+use lazy_static::lazy_static;
+use serde_json::Value;
+
+lazy_static! {
+    pub static ref VOID_VEC: Vec<Value> = Vec::new();
+}
