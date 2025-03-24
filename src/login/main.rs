@@ -1,3 +1,5 @@
+use crate::public::logger::{Logger, LoggerData};
+
 use super::qrcode::{State, UrlConsoleQRCode};
 use super::session::SessionClient;
 use base64::Engine;
@@ -6,7 +8,7 @@ use crossterm::execute;
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::Select;
 use lazy_static::lazy_static;
-use log::{error, info, trace, warn};
+use log::{info, trace, LevelFilter};
 use rand::seq::IndexedRandom;
 use regex::Regex;
 use serde_json::Value;
@@ -67,6 +69,23 @@ pub enum Error {
     Encrypt,
 }
 
+impl Logger for Error {
+    fn get_logger(&self) -> LoggerData {
+        match *self {
+            Error::Network => LoggerData::new(LevelFilter::Error, "网络不通，请检查网络。"),
+            Error::OpenQRCode => {
+                LoggerData::new(LevelFilter::Error, "无法生成二维码，可能是网络问题")
+            }
+            Error::Service => LoggerData::new(LevelFilter::Warn, "学校服务遇到异常，请重试"),
+            Error::ContentGet => LoggerData::new(LevelFilter::Warn, "无法获得页面内容，请重试"),
+            Error::ParseKey => LoggerData::new(LevelFilter::Error, "获取页面Execution或Salt异常"),
+            Error::Account => LoggerData::new(LevelFilter::Warn, "账号可能被风控，请使用扫码登录"),
+            Error::Input => LoggerData::new(LevelFilter::Error, "输入异常"),
+            Error::Encrypt => LoggerData::new(LevelFilter::Error, "密码加密失败"),
+        }
+    }
+}
+
 impl From<reqwest::Error> for Error {
     fn from(e: reqwest::Error) -> Self {
         if e.is_request() {
@@ -106,7 +125,7 @@ pub fn main() {
         .unwrap_or(3);
     let target_url = match target {
         0 => "https://lnt.xmu.edu.cn/",
-        1 => "https://jw.xmu.edu.cn/login?service=https://jw.xmu.edu.cn/new/index.html",
+        1 => panic!("此功能未实现"), //"https://jw.xmu.edu.cn/login?service=https://jw.xmu.edu.cn/new/index.html",
         _ => "",
     };
     let ret = match by {
@@ -116,18 +135,9 @@ pub fn main() {
     };
     match ret {
         Ok(_) => {}
-        Err(e) => match e {
-            Error::Network => error!("网络不通，请检查网络。"),
-            Error::OpenQRCode => error!("无法生成二维码，可能是网络问题"),
-            Error::Service => warn!("学校服务遇到异常，请重试"),
-            Error::ContentGet => warn!("无法获得页面内容，请重试"),
-            Error::ParseKey => error!("获取页面Execution或Salt异常"),
-            Error::Account => warn!("账号可能被风控，请使用扫码登录"),
-            Error::Input => error!("输入异常"),
-            Error::Encrypt => error!("密码加密失败"),
-        },
+        Err(e) => e.logger(),
     }
-    println!("{:?}", get_session());
+    info!("获取到session = {:?}", get_session());
 }
 
 fn password_login(target: &str) -> Result<(), Error> {
@@ -198,8 +208,6 @@ fn password_login(target: &str) -> Result<(), Error> {
     info!("获取到 encrypted_password = {}", encrypted_password);
 
     let data = get_pwd_data(username, &encrypted_password, execution);
-
-    panic!();
 
     let response = session.post(
         format!(

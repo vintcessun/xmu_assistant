@@ -37,3 +37,36 @@ pub fn main() {
         .filter(None, LEVEL)
         .init();
 }
+
+#[derive(Debug)]
+pub struct LoggerData {
+    level: LevelFilter,
+    data: String,
+}
+
+impl LoggerData {
+    pub fn new<T: ToString>(level: LevelFilter, data: T) -> Self {
+        Self {
+            level,
+            data: data.to_string(),
+        }
+    }
+    pub fn logger(&self) {
+        match self.level {
+            LevelFilter::Debug => log::debug!("{}", &self.data),
+            LevelFilter::Error => log::error!("{}", &self.data),
+            LevelFilter::Info => log::info!("{}", &self.data),
+            LevelFilter::Trace => log::info!("{}", &self.data),
+            LevelFilter::Warn => log::warn!("{}", &self.data),
+            LevelFilter::Off => {}
+        }
+    }
+}
+
+pub trait Logger {
+    fn get_logger(&self) -> LoggerData;
+    fn logger(&self) {
+        let log = self.get_logger();
+        log.logger();
+    }
+}
